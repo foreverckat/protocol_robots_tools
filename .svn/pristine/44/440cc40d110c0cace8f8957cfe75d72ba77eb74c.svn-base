@@ -1,0 +1,111 @@
+#-*- coding=utf-8 -*-
+#!/bin/python  
+#python version 3.1+  
+import socket  
+import threading  
+import protocol
+  
+class ConnectHandler(threading.Thread):  
+      
+      
+    def setConnect(self, connect):  
+        self.connect = connect  
+      
+    def run(self):   
+        msg = 'hello'.encode("utf-8")                 
+        rd = True 
+        print "recv data:"
+        if rd:
+            
+            LaunchResponse = protocol.launchserver.Launch_pb2.LaunchResponse()
+            LaunchResponse.token = "asdiauhsdiashdiahs"
+            LaunchResponse.session = "asdiauhsdiashdiahs"
+            LaunchResponse.expire = 1231123123
+            LaunchResponse.hash = "1231sdad"
+            LaunchResponse.isNew = True
+            
+            ServerInfo1 = LaunchResponse.serversList.add() 
+            ServerInfo1.serverId = 1
+            ServerInfo1.serverName = "joker test 1"
+            ServerInfo1.serverStatus = 0
+            ServerInfo1.statusInfo = "0"
+            
+            serverGate1 = ServerInfo1.gateServerList.add()
+            serverGate1.hostAddress = "192.168.1.1"
+            
+            serverGate2 = ServerInfo1.gateServerList.add()
+            serverGate2.hostAddress = "192.168.1.2"
+            
+            ServerInfo2 = LaunchResponse.serversList.add()
+            ServerInfo2.serverId = 2
+            ServerInfo2.serverName = "joker test 2"
+            ServerInfo2.serverStatus = 0
+            ServerInfo2.statusInfo = "0"
+            
+            serverGate3 = ServerInfo2.gateServerList.add()
+            serverGate3.hostAddress = "192.168.1.3"
+            
+            serverGate4 = ServerInfo2.gateServerList.add()
+            serverGate4.hostAddress = "192.168.1.4"
+            
+            myServerList1 = LaunchResponse.myServerList.add() 
+            myServerList1.serverId = 1
+            myServerList1.nickName = "motherfucker"
+            myServerList1.level = 3
+            
+            
+            myServerList2 = LaunchResponse.myServerList.add() 
+            myServerList2.serverId = 1
+            myServerList2.nickName = "motherfucker123"
+            myServerList2.level = 9
+            
+            
+            import struct
+            header_data_Type = "5i"
+            Header_Sign = 1
+            package_length = LaunchResponse.ByteSize() + struct.calcsize(header_data_Type)
+            print package_length
+            server_index = 1
+            protocol_ID = 2
+            protobuf_ID = 1
+            
+            header_data = [Header_Sign, package_length, server_index, protocol_ID, protobuf_ID]
+            data = struct.pack(header_data_Type,*(header_data)) + LaunchResponse.SerializeToString()
+            self.connect.send(data)
+            
+            #data_buf = LaunchResponse.SerializeToString()
+            
+        self.connect.close()  
+          
+class TestServer:      
+    def __init__(self, ip='localhost', iPort=8771):      
+          
+        self.ip = ip  
+        self.iPort = iPort  
+      
+    def start(self):          
+        print("TestServer start({0}:{1})...".format(self.ip, self.iPort))  
+                  
+        cc = 1          
+        ss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+        ss.settimeout(1000 * 10)  
+        ss.bind((self.ip, self.iPort))  
+        ss.listen(5)  
+          
+#        while cc <= 5:   
+        while True:  
+            (client, address) = ss.accept()  
+            print("client connecting:",cc)  
+            cc+=1              
+            ch = ConnectHandler()  
+            ch.setConnect(client)  
+            ch.start()  
+            #client.send(b'hello')  
+            #client.close()  
+        ss.close()  
+        print("TestServer close, bye-bye.")      
+      
+      
+if __name__ == "__main__":  
+    ts = TestServer()  
+    ts.start() 

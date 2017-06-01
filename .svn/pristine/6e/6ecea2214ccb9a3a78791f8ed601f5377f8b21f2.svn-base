@@ -1,0 +1,81 @@
+#coding=utf8
+
+'''
+@author: chengjie
+'''
+
+import logging
+import threading
+import select
+import socket
+from LGN import *
+from email import header
+import struct
+
+def initConn(func):
+    """
+    decorator of socket connection
+    
+    """
+    def __decorator(*argus):
+        if len(argus) != 2 and type(argus[0]) != str and type(argus[1]) != int:
+            logging.error(Action_Msg_01)
+            return False
+        sock = func(*argus)
+        return sock
+    return __decorator
+
+
+ 
+@initConn
+def ConnectHandler(*argus):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    host_IP, host_PORT = argus
+    try:
+        sock.connect((host_IP, host_PORT))
+    except Exception, e:
+        logging.error(Action_Msg_02 % (":".join([host_IP, str(host_PORT)]), e))
+        sock.close()
+        return None
+    return sock
+
+
+
+
+def make_Head(func):
+    """
+    MessageDecoder(
+        int maxFrameLength,
+        int lengthFieldOffset,
+        int lengthFieldLength,
+        int lengthAdjustment,
+        int initialBytesToStrip,
+        ArrayList<MessageLite> prototypeArray
+    )
+    """
+    def __deco(**argu):
+        print "making header"
+        header_data_Type = "5i"
+        maxFrameLength = 1
+        lengthFieldOffset = 1
+        lengthFieldLength= 1
+        lengthAdjustment = 1
+        initialBytesToStrip = 1
+        header_data = [maxFrameLength, lengthFieldOffset, lengthFieldLength, lengthAdjustment, initialBytesToStrip]
+        argu["struct_header_data"] = struct.pack(header_data_Type, *(header_data))
+        argu["protocol"] = 1
+        return func(**argu)
+    return __deco
+
+@make_Head
+def make_Pack(**argu):
+    
+    pack = argu["struct_header_data"] + argu["body"]
+    print "making pack"
+    print "pack is [%s]" % pack
+    return pack
+
+
+#make_Pack(a = 1, b = 2)
+#sk = ConnectHandler("127.0.0.1", 8771)

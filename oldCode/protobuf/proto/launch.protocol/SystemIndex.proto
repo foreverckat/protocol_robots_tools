@@ -1,0 +1,7 @@
+package protocal.launch;
+
+
+enum SystemType{
+  SERVER_ERROR = 1;
+  LAUNCH = 2;
+}

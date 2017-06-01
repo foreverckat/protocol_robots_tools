@@ -1,0 +1,130 @@
+#coding=utf8
+
+'''
+@author: chengjie
+'''
+import socket
+import logging
+import threading
+import Queue
+import select
+import struct
+import time
+
+class socketManager(object):
+    """
+        发包的处理
+        采用单独线程，通过select方法进行待收包的socket管理
+    """
+    def __init__(self):
+        self.recvSockets = []
+        self.sockdata = Queue.Queue()
+        
+    def setManagerFlag(self, flag):
+        self.managerFlag = flag
+    
+    def closeTcp(self, sock):
+        self.setManagerFlag(False)
+        sock.send("")
+        
+        
+        
+    def connectTcp(self, host, cc):
+        """
+        connect to specified server through tcp connection.
+        """
+        self.setManagerFlag(True)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.sock.connect(host)
+            logging.info("connect to %s successfully" % (":".join([str(x) for x in host])))
+        except:
+            logging.info("connect to %s failed" % (":".join([str(x) for x in host])))
+            self.sock.close()
+            return None
+        self.mt = threading.Thread(target = self.manager, args=(self.sock, cc))
+        self.mt.start()
+        
+        return self.sock
+    
+    def manager(self, sock, cc):
+        # select method, choose send or recv function.
+        logging.info("manager threading started, attached on sock[%s]" % sock)
+        selectWaitTime = 1
+        packet = "";BrokenPacket = "";canParseLength = False, 
+        while self.managerFlag:
+            recvable , sendable , exceptional = select.select([sock], [], [], selectWaitTime)
+            if len(recvable):
+                #logging.info("handled with sock -  [%s]" % sock)
+                try:
+                    ok, packet, BrokenPacket, canParseLength = recvData(sock, packet, BrokenPacket, canParseLength)
+                    #logging.info("recv finished. result is %s, packet is [%s]" % (ok, packet))
+                    if ok:
+                        self.sockdata.put(packet)
+                        packet = ""
+                        if len(BrokenPacket):
+                            packet = BrokenPacket
+                            BrokenPacket = ""
+                        #logging.info("ready for releasing.")
+                        cc.acquire()
+                        cc.notify()
+                        cc.release()
+                except Exception, e:
+                    logging.info(e)
+            
+        sock.close()
+        logging.info("sock - [%s] closed." % sock)
+        logging.info("manager thread exited.")
+        
+def recvData(sock, packet, BrokenPacket, canParseLength):
+    #if len(packet):
+        #logging.info("started receiving data with packet [%s]" % packet)
+    # 若sock没有对应的数据，则初始化一套
+    MINSocketHeaderLength = 12
+    #logging.info(sock)
+    packet += sock.recv(8)
+    #logging.info("packet is [%s]" %packet)
+    if not len(packet):
+        return False, packet, "", False
+    if not len(BrokenPacket):# 如果是非断包、粘包，其长度必须大于12，即至少包含最小的header数据
+        if len(packet) >= MINSocketHeaderLength:
+            canParseLength = True
+        else:
+            return False, packet, "", False
+    else:# 若是断包、粘包状态，则分情况处理
+        if len(packet) >= MINSocketHeaderLength: # 粘包状态下，拼接后大于最小字节要求的，可以进行处理
+            canParseLength = True
+        else:# 粘包状态拼接后都不满足的，则不处理，重新尝试收包
+            canParseLength = False
+    if canParseLength:# 若可以处理包，则处理之
+        PackHeader, PackBody =  packet[:MINSocketHeaderLength], packet[MINSocketHeaderLength:]
+        try:
+            tag,  packetLength, pbId  = struct.unpack(">iii", PackHeader)
+            packetLength -= MINSocketHeaderLength
+        except:
+            return False, packet, "", False
+    else:
+        return False, packet, "", False    
+    
+    if packetLength <= 0:
+        #logging.info("error data-packet length(data less than 0).")
+        return False, packet, "", False
+    else:
+        if packetLength == len(PackBody):
+            #logging.info("PAKCAGEINFO : package length is %s -- received data length is -- %s" % (packetLength, len(packet)))
+            #logging.info("data is [%s]" % packet)
+            return True, packet, "", False
+        
+        elif packetLength < len(PackBody):
+            PackData, BrokenPacket = PackBody[:packetLength], PackBody[packetLength:] 
+            packet = PackHeader + PackData
+            #logging.info("PACKAGEINFO : package is larger than definition, length is %s -- received data length is -- %s" % (packetLength, len(packet)))
+            #logging.info("data is [%s]" % packet)
+            #logging.info("left data is %s" % BrokenPacket)
+            return True, packet, BrokenPacket, False
+            
+        elif packetLength > len(PackBody):
+            #logging.info("PACKAGEINFO : package is smaller than definition, length is %s -- received data length is -- %s" % (packetLength,len(PackBody)))
+            #logging.info("data is [%s]" % packet)
+            return False, packet, "", False
+    

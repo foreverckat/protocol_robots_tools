@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ProfilingTarget xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ProjectTarget>
+    <TargetProject>b4ee8f1a-fd37-44a6-874c-b5e6d699d451</TargetProject>
+    <FriendlyName>ProtoBufTest</FriendlyName>
+  </ProjectTarget>
+  <Reports>
+    <Report>
+      <Filename>C:\Users\17385\AppData\Local\Temp\ProtoBufTest_20160802.vsp</Filename>
+    </Report>
+  </Reports>
+</ProfilingTarget>

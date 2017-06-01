@@ -1,0 +1,102 @@
+package protocal.game.EmployeProto;
+
+enum ProtoID{
+
+  //获取所有卡牌
+  EMPLOYE_ALL_CARD_REQ = 1;
+  EMPLOYE_ALL_CARD_RESPONSE = 2;
+ 
+ 
+  //卡牌详细信息(是否在上个协议一起发了)
+  EMPLOYE_CARD_INFO_REQ = 3;
+  EMPLOYE_CARD_INFO_RESPONSE = 4;
+  
+  //获取所有卡牌碎片
+  EMPLOYE_ALL_CARD_DEBRIS_REQ = 5;
+  EMPLOYE_ALL_CARD_DEBRIS_RESPONSE = 6;
+  
+  //卡牌升级
+  EMPLOYE_CARD_UPGRADE_REQ = 7;
+  EMPLOYE_CARD_UPGRADE_RESPONSE = 8;
+  
+  //卡牌进阶
+  EMPLOYE_CARD_ADVANCE_REQ = 9;
+  EMPLOYE_CARD_ADVANCE_RESPONSE = 10;
+  
+  //卡牌更换
+  EMPLOYE_CARD_REPLACE_REQ = 11;
+  EMPLOYE_CARD_REPLACE_RESPONSE = 12;
+  
+  
+}
+
+//获取所有卡牌请求(每次只登录请求一次)
+message GetAllCardRequest{
+  
+}
+
+message GetAllCardResponse{
+  repeated CardInfo cardList = 1;//所有卡牌详情
+}
+
+message CardInfo{
+  required int64 uid = 1;//卡片唯一id
+  required int32 id = 2;//静态表卡片id
+  required int32 level = 3;//卡片等级
+  required int32 fight = 4;//战力
+  required int32 exp = 5;//当前经验
+  required int32 hp = 6;//生命值
+  required int32 mp = 7;//能量值
+  required int32 attack = 8;//攻击值
+  required int32 defense = 9;//防御
+  //repeated CardSkillInfo skillList = 10;//卡牌技能
+}
+
+message CardUpgradeRequest{
+  required int64 cardUid = 1;//卡片唯一id
+  required int64 employeUid = 2;//角色uid
+  repeated ItemInfo items = 3;//材料
+  repeated int64 cards = 4;//卡牌uid
+}
+
+message ItemInfo{
+  required int32 id = 1;//静态表id
+  required int32 count = 2;//数量
+}
+
+message CardUpgradeResponse{
+  
+}
+
+message CardAdvanceRequest{
+  required int64 cardUid = 1;//卡片唯一id
+  required int64 employeUid = 2;//角色uid
+  repeated ItemInfo items = 3;//材料
+  repeated int64 cards = 4;//卡牌uid
+}
+
+message CardAdvanceResponse{
+  required CardInfo cardInfo = 1;//进阶后卡牌信息
+}
+
+
+message CardChangeRequest{
+  required int64 employeUid = 1;//角色uid
+  required int64 cardUid = 2;//卡片唯一id
+  required int64 newCardUid = 3;//将要换上的卡片唯一id
+  required bool change = 4;//衣服是否改变
+}
+
+message CardChangeResponse{
+  
+}
+
+
+
+
+
+
+
+
+
+

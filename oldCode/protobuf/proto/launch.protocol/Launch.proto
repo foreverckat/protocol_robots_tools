@@ -1,0 +1,45 @@
+package protocal.launch;
+
+
+enum ProtoID{
+  LAUNCH_REQ = 1;	
+  LAUNCH_RESPONSE = 2;
+}
+
+//登陆请求，验证账号
+message LaunchRequest{
+  optional string account = 1; 
+  required string password = 2;
+  required string device = 3;
+}
+
+//验证成功反回，不成功的见ServerError
+message LaunchResponse{
+  required string token = 1;
+  required string session = 2;
+  required int64 expire = 3;
+  required string hash = 4;
+  required bool isNew = 5;		//是否是新用户 true==新用户
+  repeated ServerInfo serversList = 6; //总的server列表
+  repeated MyServerInfo myServerList = 7;//我登陆过的服务器列表,按时间倒序
+}
+
+//网关服务器
+message ServerGate{
+  required string hostAddress = 1;	//网关服务器地址：格式ip:port
+}
+//服务器信息
+message ServerInfo{
+  required int64 serverId = 1;
+  required string serverName = 2;
+  required int32 serverStatus= 3; //服务器状态0为正常
+  optional string statusInfo = 4;//服务器状态信息
+  repeated ServerGate gateServerList = 5;//网关服务器列表
+}
+
+//玩家登陆过的服务器列表
+message MyServerInfo{
+  required int64 serverId = 1;	//服务器编号
+  required string nickName = 2; //角色名
+  required int32 level = 3;     //角色等级
+}

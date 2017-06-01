@@ -1,0 +1,6 @@
+package protocal.log;
+
+
+enum SystemType{
+  CLIENTLOG = 1;
+}

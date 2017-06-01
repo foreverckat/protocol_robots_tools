@@ -1,0 +1,60 @@
+#-*- coding=utf-8 -*-
+#!/bin/python  
+#python version 3.1+  
+import socket  
+import threading  
+  
+class ConnectHandler(threading.Thread):  
+      
+      
+    def setConnect(self, connect):  
+        self.connect = connect  
+      
+    def run(self):   
+        msg = 'hello'.encode("utf-8")                 
+        #rd = self.connect.recv(128)  
+        print "recv data:"
+        """from drpb import pb_pb2
+        row = pb_pb2.RowProto()
+        
+        row.ParseFromString(rd)
+        
+        print "null_map:", row.null_map
+        for x,y in enumerate(row.column):
+            print "column%s:" % x, y
+            """
+        
+        self.connect.close()  
+          
+class TestServer:      
+    def __init__(self, ip='localhost', iPort=8771):      
+          
+        self.ip = ip  
+        self.iPort = iPort  
+      
+    def start(self):          
+        print("TestServer start({0}:{1})...".format(self.ip, self.iPort))  
+                  
+        cc = 1          
+        ss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+        ss.settimeout(1000 * 10)  
+        ss.bind((self.ip, self.iPort))  
+        ss.listen(5)  
+          
+#        while cc <= 5:   
+        while True:  
+            (client, address) = ss.accept()  
+            print("client connecting:",cc)  
+            cc+=1              
+            ch = ConnectHandler()  
+            ch.setConnect(client)  
+            ch.start()  
+            #client.send(b'hello')  
+            #client.close()  
+        ss.close()  
+        print("TestServer close, bye-bye.")      
+      
+      
+if __name__ == "__main__":  
+    ts = TestServer()  
+    ts.start() 

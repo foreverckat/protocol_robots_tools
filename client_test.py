@@ -1,0 +1,211 @@
+#-*- coding=utf-8 -*-
+'''
+@author: chengjie
+'''
+
+from robot_config import robot_cfg
+from robot import robot_basic
+from robot import robot_Actions
+from robot import robot_Socket
+from robot import robot_Data
+import logging
+
+import threading
+import Queue
+
+import socket
+import time
+
+from proto.ChatMsgProtocol_pb2 import ChatMsg
+lock = threading.Lock()
+
+class rb_worker(robot_Actions.actionManager):#, robot_Socket.socketManager):
+    """
+    robot class.
+    """
+    
+    def __init__(self, sid):
+        """
+        initialize some arguments.
+        """
+        
+        self.st = time.time()
+        self.sid = sid
+        
+        robot_Actions.actionManager.__init__(self)
+        #robot_Socket.socketManager.__init__(self)
+        # 处理机器人线程的任务数据
+        #self.cond = threading.Condition()
+        self.robot_config = robot_cfg
+        jobs = Queue.Queue()
+        for na in self.robot_config["robot"]["action"]:jobs.put(na)
+        # 启动任务执行函数
+        self.startRobot(jobs)
+    
+    def startRobot(self, jobs):
+        """
+            从任务队列中依次获取待执行任务，并调用对应方法进行执行
+        """
+        while not jobs.empty():
+            try:
+                data = jobs.get()
+                if len(data) == 2:
+                    action, args = data
+                    ok, result = self.doAction(action, *args)
+                elif len(data) == 1:
+                    action = data[0]
+                    ok, result = self.doAction(action)
+                #logging.info("job -- %s is done." % action)
+                if not ok:
+                    pass
+            finally:
+                jobs.task_done()
+        #logging.info("all tasks done.")
+        
+    def doAction(self, action, *argvs):
+        """
+        select specified method to execute the action.
+        """
+        if len(argvs):
+            return getattr(self, action)(*(argvs))
+        else:
+            return getattr(self, action)()
+        
+    def readdata(self, sock, mySocket):
+        
+        rd = None
+        
+        
+        while 1:
+            lock.acquire()
+            if not sock in mySocket.sockdata:
+                lock.release()
+            elif mySocket.sockdata[sock].empty():
+                lock.release()
+            else:
+                try:
+                    rd = mySocket.sockdata[self.sock].get()
+                    if rd != None and len(rd)>0:
+                        lock.release()
+                        break
+                except:
+                    lock.release()
+            
+        return rd
+        
+        
+    
+    def action_login(self):
+        # 测试方法
+        
+        self.sock  = mySocket.connectTcp(self.robot_config["server"]["login"])
+        #logging.info("self.sock is %s" % self.sock)
+        
+        
+        if self.sock == None:
+            return False, None
+        
+        # 测试用的protobuf协议方法
+        import proto
+        import sys
+        sys.path.append("proto/launch.protocol/launch/protocol")
+        import Launch_pb2
+        import SystemIndex_pb2
+        import ServerError_pb2
+        #print dir(SystemIndex_pb2)
+        LaunchReq_sock = Launch_pb2.LaunchRequest()
+        
+        #SystemIndex_sock = SystemIndex_pb2.SystemType()
+        #logging.info(dir(SystemIndex_sock))
+        import struct
+        
+        logging.info("role id is %s" % self.sid)
+        for n in range(1):
+            #LaunchReq_sock.account = "235"
+            LaunchReq_sock.password = "123456"
+            LaunchReq_sock.device = "from Python"
+            LaunchReq_sock.launchType = Launch_pb2.NEW
+            
+            ## 包头标志    总包长度    协议所属性系ID    协议子ID    PB数据
+            ##协议所属性系ID：通过 SystemIndex.SystemType 中的枚举设置。
+            ##协议子ID：通过该协议所在的proto文件里的protoID设置
+            
+            """
+            enum ProtoID{
+                    LAUNCHREQUEST = 1;    
+                    LAUNCHRESPONSE = 2;
+                    }
+                    
+            enum SystemType{
+                  SERVERERROR = 1;
+                  LAUNCH = 2;
+                  LOG = 3;
+                }
+            """
+            data_buf = LaunchReq_sock.SerializeToString()
+            dataLen = LaunchReq_sock.ByteSize() + 16
+            
+            stream = struct.pack(">iiii" , 1, dataLen, SystemIndex_pb2.LAUNCH, 
+                                 Launch_pb2.LAUNCHREQUEST) + data_buf
+            
+            #logging.info("sending data : "+ repr(stream))
+            self.sock.send(stream)
+            rd = self.readdata(self.sock, mySocket)
+            #logging.info("recv data [%s]" % repr(rd))
+            
+            tag, length, systemID, pbid = struct.unpack(">iiii", rd[:16])
+            sockData = rd[16:]
+            #logging.info("systemID is %s ， pbid is %s" % (systemID, pbid ))
+            
+            
+            if systemID == 2 and pbid == 2:
+                sock_ChatMsg_recv = Launch_pb2.LaunchResponse()
+                sock_ChatMsg_recv.ParseFromString(sockData)
+            
+                token = sock_ChatMsg_recv.token
+            
+                expire = time.ctime(sock_ChatMsg_recv.expire / 1000) 
+                hash = sock_ChatMsg_recv.hash
+                msg_s = "recv data [expire - %s, hash - %s]" % (expire, hash)
+                logging.info(msg_s)
+                
+            elif systemID == 1 and pbid == 1:
+                ServerException_recv = ServerError_pb2.ServerException()
+                
+                ServerException_recv.ParseFromString(sockData)
+                
+                errorCode = ServerException_recv.errorCode
+                info = ServerException_recv.info
+                msg_s = "recv data [error - %s, info - %s]" % (errorCode, info )
+                logging.info(msg_s)
+            
+        with open("./log/%s.txt" % self.sid, "w") as f:
+            f.write(msg_s)
+            
+            
+                
+        mySocket.closeTcp(self.sock)
+        
+        return True, 123
+
+mySocket = robot_Socket.socketManager()
+
+mySocket.setDaemon(True)
+mySocket.start()
+
+#
+
+st = time.time()
+from multiprocessing.dummy import Pool as ThreadPool
+maxRobot = robot_cfg["robot"]["count"]
+pool = ThreadPool(2)
+results = pool.map(rb_worker, range(maxRobot))
+pool.close()
+pool.join()
+
+mySocket.closeManager()
+logging.info("done.............")
+logging.info("-" * 60)
+logging.error(time.time() - st)
+
+

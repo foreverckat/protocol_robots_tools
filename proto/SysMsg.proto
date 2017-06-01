@@ -1,0 +1,19 @@
+enum SysMsgID {					// 系统消息编号类型	
+	REQ_SUBMIT_INFO = 10;		// 请求提交错误信息
+}
+
+message ReqSubmitInfo {									// 请求提交错误信息
+	optional int32 pbid = 1 [default = 2];
+	enum SubmitType {
+		INFO = 0;				// 普通信息
+		ERR = 1;				// 错误
+		STATISTICS = 2;			// 统计
+	}
+	
+	required SubmitType type			= 2;			// 提交类型
+	required string		err_content		= 3;			// 错误信息	
+}
+
+message ReqHeart {					// 心跳
+	required int32 heart_num = 1;			// 跳动次数
+}

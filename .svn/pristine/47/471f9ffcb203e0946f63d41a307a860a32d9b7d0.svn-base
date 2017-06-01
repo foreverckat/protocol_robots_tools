@@ -1,0 +1,148 @@
+#coding=utf8
+
+'''
+@author: chengjie
+'''
+
+import logging
+import threading
+import select
+import socket
+from LGN import *
+import struct
+import protocol
+
+ServerType =  {
+               "None":0,
+               "LAUNCH_SVR":1,
+               "LOG_SVR":2,
+               "GAME_SVR":3,
+               "GATE_SVR":4,
+               }
+
+header_data_Type = ">5i"
+        
+def initConn(func):
+    """
+    decorator of socket connection
+    
+    """
+    def __decorator(*argus):
+        if len(argus) != 2 and type(argus[0]) != str and type(argus[1]) != int:
+            logging.error(Action_Msg_01)
+            return False
+        sock = func(*argus)
+        return sock
+    return __decorator
+
+
+ 
+@initConn
+def ConnectHandler(*argus):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2)
+    host_IP, host_PORT = argus
+    try:
+        sock.connect((host_IP, host_PORT))
+    except Exception, e:
+        logging.error(Action_Msg_02 % (":".join([host_IP, str(host_PORT)]), e))
+        sock.close()
+        return None
+    return sock
+
+
+
+
+def encrypt_LaunchRequest_pb_Header(func):
+    """
+        #Client <-> LaunchSvr
+        #包头总长：20 byte
+        #名称    包头标志    总包长度    Server编号    协议所属性系ID    协议子ID    PB数据
+        #长度（byte）    4    4    4    4    4    变长
+        #值    0X01                    
+        #说明：
+        #Server编号：取JokerServerProto.ServerType里的枚举
+        #协议所属性系ID：通过SystemIndex.SystemType中的枚举设置。
+        #协议子ID：通过该协议所在的proto文件里的protoID设置。
+           enum SystemType{
+              SERVER_ERROR = 1;
+              LAUNCH = 2;
+            }
+    """
+    def __deco(**argus):
+        Header_Sign = 1
+        package_length = argus["protobuf"].ByteSize() + struct.calcsize(header_data_Type)
+        server_index = 1
+        protocol_ID = 2
+        protobuf_ID = 1
+        
+        header_data = struct.pack(header_data_Type, Header_Sign, package_length, server_index, protocol_ID, protobuf_ID)
+        argus["package"] = header_data + argus["protobuf"].SerializeToString()
+        print repr(argus["package"])
+        return func(**argus)
+    return __deco
+
+
+def encrypt_LaunchRequest_pb_data(func):
+    """
+    enum ProtoID{
+          LAUNCH_REQ = 1;    
+          LAUNCH_RESPONSE = 2;
+        }
+        
+    //登陆请求，验证账号
+    message LaunchRequest{
+      optional string account = 1; 
+      required string password = 2;
+      required string device = 3;
+    }
+
+    """
+    def __deco(**argus):
+        LaunchPackage = protocol.launchserver.Launch_pb2.LaunchRequest()
+        LaunchPackage.account = argus["account"]
+        LaunchPackage.password = argus["password"]
+        LaunchPackage.device = argus["device"]
+        
+        argus["protobuf"] = LaunchPackage
+        return func(**argus)
+    
+    return __deco
+
+
+
+
+def decrypt_LaunchRequest_pb_Header(func):
+    def __deco(data):
+        if len(data) >= 20:
+            package_Sign, package_length, server_Index, protocl_ID, protobuf_ID = struct.unpack_from(header_data_Type, data, 0)
+            print package_Sign, package_length, server_Index, protocl_ID, protobuf_ID
+            if len(data) == package_length:
+                print 11111
+                return func
+            else:
+                return False
+        else:
+            print "error package."
+            return False
+    return __deco
+
+
+@encrypt_LaunchRequest_pb_data
+@encrypt_LaunchRequest_pb_Header
+def encrypt_LaunchRequest_Pack(**argu):
+    return argu["package"]
+
+
+
+@decrypt_LaunchRequest_pb_Header
+def decrypt_LaunchRequest_Pack(data):
+    return 1
+sock = ConnectHandler("120.25.152.35", 8091)
+sock.send(encrypt_LaunchRequest_Pack( account ="123456123", password ="121234561233", device="123321" ))
+
+data = sock.recv(1024)
+if data:
+    decrypt_LaunchRequest_Pack(data)
+    
+print dir( protocol.jokersvr.JokerServer_pb2)

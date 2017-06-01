@@ -1,0 +1,230 @@
+package protocal.game.StageProto;
+//import "gameserver.protocol/Role.proto";
+//import protocal.game.RoleProto.Role.CardInfo;
+//import protocal.game.RoleProto.Role.EmployeWeaponInfo;
+//import protocal.game.RoleProto.Role.ClothesInfo;
+
+enum ProtoID{
+  //获取章信息
+  CHAPTER_INFO_REQ = 1;
+  CHAPTER_INFO_RESPONSE = 2;
+  
+  //获取某章的关卡信息
+  STAGE_INFOS_REQ = 3;
+  STAGE_INFOS_RESPONSE = 4;
+  
+  //发起攻打
+  STAGE_ATTACK_REQ = 5;
+  STAGE_ATTACK_RESPONSE = 6;
+  
+  //结算
+  STAGE_TOTAL_REQ = 7;
+  STAGE_TOTAL_RESPONSE = 8;
+  
+  //购买体力
+  STAGE_BUY_POWER_REQ = 9;
+  STAGE_BUY_POWER_RESPONSE = 10;
+  
+  //重置攻打次数
+  STAGE_RESET_ATTTIME_REQ = 11;
+  STAGE_RESET_ATTTIME_RESPONSE = 12;
+  
+  //扫荡
+  STAGE_SWEEP_REQ = 13;
+  STAGE_SWEEP_RESPONSE = 14;
+  
+  //领取副本星星宝箱
+  STAGE_STAR_BOX_REQ = 15;
+  STAGE_STAR_BOX_RESPONSE = 16;
+  
+  //剧情关卡结算
+  STAGE_STORY_TOTAL_REQ = 17;
+  STAGE_STORY_TOTAL_RESPONSE = 18;
+  
+  //获取怪物信息(7.28修改,之前策划说的流程和实际不符合)
+  STAGE_MONSTER_INFO_REQ = 19;
+  STAGE_MONSTER_INFO_RESPONSE = 20;
+
+}
+
+//请求章信息
+message ChapterInfoRequest{
+}
+
+//下行章信息
+message ChapterInfoResponse{
+  required int32 chapterId = 1;//普通副本能攻打的最远章id
+  required int32 eliteChapterId = 2;//精英副本能攻打的最远章id
+}
+
+//请求某章的关卡信息
+message StageInfosRequest{
+  required int32 staticChapterId = 1;//章id
+}
+
+message StageInfosResponse{
+  repeated StageInfo stageList = 1;//关卡信息列表(请求的是普通这里就是普通))
+  required int32 allStar = 2;//总星星数
+  repeated int32 starBoxState = 3;//星星宝箱状态(0=星星不够,1=够,没领取,2=已经领取)
+}
+
+
+message StageInfo{
+  required int32 staticStageId = 1;//静态表id
+  required int32 star = 2;//星星数
+  required int32 attTime = 3;//挑战次数
+  required int32 task1 = 4;//任务一状态(0=未达成,1=达成)
+  required int32 task2 = 5;//任务二状态
+  required int32 task3 = 6;//任务三状态
+}
+
+//请求攻打关卡
+message AttackStageRequest{
+  required int32 staticStageId = 1;//攻打关卡id
+  required int32 difficultyValue = 2;//副本类型(1=普通,2=精英)
+}
+
+message AttackStageResponse{
+  required int64 battleId = 1;//战斗id
+  required string monsterJson = 2;//怪物信息(json格式)
+  repeated MonsterDrop monsterDropList = 3;//掉落组
+  repeated AttackEmploye battleEmployeList = 4;//上阵角色属性
+  
+}
+
+message MonsterDrop {
+  required int32 roundIndex = 1;//轮次index
+  required int32 roundInfoIndex = 2;//本轮的怪物index
+  required int32 monsterId = 3;//怪物id
+  repeated Drop dropList = 4;//掉落组
+}
+
+message Drop{
+  required int32 type = 1;//掉落类型
+  required int32 id = 2;//物品id(无id的填0)
+  required int32 count = 3;//数量
+}
+
+message AttackEmploye{
+  required int64 employeUid = 1;//上阵角色uid
+  required int32 att = 2;//攻击
+  required int32 hp = 3;//生命
+  required int32 sp = 4;//能量
+  required int32 def = 5;//防御
+  required float moveSpeed = 6;//移动速度
+}
+
+//结算
+message AttackTotalRequest{
+  required int64 battleId = 1;//战斗id
+  required int32 result = 2;//战斗结果(0失败,1胜利)
+  required int32 task1 = 3;//任务一完成情况
+  required float task2 = 4;//任务二完成情况
+  required int32 task3 = 5;//任务三完成情况
+  repeated MonsterDrop monsterDropList = 6;//掉落组
+  repeated AttackEmploye battleEmployeList = 8;//上阵角色属性
+}
+
+message AttackTotalResponse{
+  required int32 addSoftCurrency = 1;//增加金币
+  required int32 addTeamExp = 2;//增加团队经验
+  required int32 task1 = 3;//任务一完成情况
+  required int32 task2 = 4;//任务二完成情况
+  required int32 task3 = 5;//任务三完成情况
+  repeated StageAwardItem allItemList = 6;//所有掉落道具列表
+  repeated CardInfo dropCardList = 7;//掉落卡牌
+  repeated UpLevelEmploye upEmployeList = 8;//角色的经验,等级,属性...(待确定)
+  
+}
+
+message UpLevelEmploye{
+  required int64 uid = 1;//角色唯一id
+  required UpCardInfo upCard = 2;//升级后卡片信息
+  required float moveSpeed = 3;//角色移动速度
+}
+
+//卡牌升级信息
+message UpCardInfo{
+  required int64 uid = 1;//卡片唯一id
+  required int32 id = 2;//静态表卡片id
+  required int32 level = 3;//卡片等级
+  required int32 addExp = 4;//增加经验
+  required int32 exp = 5;//当前经验
+}
+
+//卡牌信息
+message CardInfo{
+  required int64 uid = 1;//卡片唯一id
+  required int32 id = 2;//静态表卡片id
+}
+
+message StageAwardItem{
+  required int32 propId = 1;//道具id
+  required int32 propCount = 2;//道具数目
+}
+
+//购买体力
+message BuyPowerRequest{
+  required int32 powerNum = 1;//购买体力数
+  required int32 hardCurrency = 2;//消耗钻石数
+}
+
+message BuyPowerResponse{
+}
+
+//重置攻打次数
+message ResetAttackTimeRequest{
+  required int32 stageId = 1;//消耗钻石数
+  required int32 stageType = 2;//副本类型(1=普通,2=精英)
+  required int32 hardCurrency = 3;//消耗钻石数
+ 
+}
+
+message ResetAttackTimeResponse{
+}
+
+//扫荡请求
+message SweepRequest{
+  required int32 stageId = 1;//扫荡关卡id
+  required int32 time = 2;//扫荡次数
+  required int32 sweepTicketNum = 3;//使用扫荡劵数量
+  required int32 stageType = 4;//副本类型(1=普通,2=精英)
+}
+
+message SweepResponse{
+//回复奖励的东西(金币,钻石,道具,装备,,,,经验)
+}
+
+//领取副本星星宝箱
+message StarBoxAwardRequest{
+  required int32 chapterId = 1;//章节id
+  required int32 type = 2;//副本类型(1=普通,2=精英)
+  required int32 boxIndex = 3;//第几个宝箱(0.1.2)
+}
+
+message StarBoxAwardResponse{
+  required int32 addSoftCurrency = 1;//增加金币
+  required int32 addTeamExp = 2;//增加团队经验
+  required int32 addHardCurrency = 3;//钻石,
+  required int32 addPower = 4;//体力
+  repeated StageAwardItem allItemList = 5;//所有掉落道具列表
+  repeated CardInfo dropCardList = 6;//掉落卡牌
+}
+
+//结算剧情关卡
+message StoryStageTotalRequest{
+  required int32 stageId = 1;//关卡id
+  required int32 type = 2;//副本类型1=普通,2=精英)
+}
+
+message StoryStageTotalResponse{
+}
+
+message StageMonsterInfoRequest{
+  required int32 staticStageId = 1;//攻打关卡id
+  required int32 type = 2;//副本类型(1=普通,2=精英)
+}
+
+message StageMonsterInfoResponse{
+  required string monsterJson = 1;//怪物信息(json格式)
+}

@@ -1,0 +1,124 @@
+#-*- coding=utf-8 -*-
+'''
+@author: chengjie
+'''
+
+from robot_config import robot_cfg
+from robot import robot_basic
+from robot import robot_Actions
+from robot import robot_Socket
+from robot import robot_Data
+import logging
+import threading
+import Queue
+
+import socket
+import time
+from _socket import SOCK_STREAM
+from proto.ChatMsgProtocol_pb2 import ChatMsg
+
+        
+class rb_worker(robot_Actions.actionManager, robot_Socket.socketManager):
+    
+    """
+    robot class.
+    """
+    
+    def __init__(self, sid):
+        """
+        initialize some arguments.
+        """
+        
+        self.st = time.time()
+        self.sid = sid
+        #self.signal = threadSignal
+        robot_Actions.actionManager.__init__(self)
+        robot_Socket.socketManager.__init__(self)
+        # 处理机器人线程的任务数据
+        self.robot_config = robot_cfg
+        jobs = Queue.Queue()
+        for na in self.robot_config["robot"]["action"]:jobs.put(na)
+        # 启动任务执行函数
+        self.startRobot(jobs)
+    
+    def startRobot(self, jobs):
+        """
+            从任务队列中依次获取待执行任务，并调用对应方法进行执行
+        """
+        while not jobs.empty():
+            try:
+                action, args = jobs.get()
+                ok, result = self.doAction(action, *args)
+                logging.info("job -- %s is done." % action)
+                if not ok:
+                    pass
+            finally:
+                jobs.task_done()
+        logging.info("all tasks done.")
+        
+    def doAction(self, action, *argvs):
+        """
+        select specified method to execute the action.
+        """
+        return getattr(self, action)(*(argvs))
+    
+    def action_login(self, sid):
+        # 测试方法
+        self.cc = threading.Condition()
+        self.sock = self.connectTcp(self.robot_config["server"]["login"], self.cc)
+        self.sock.settimeout(1)
+        
+        if self.sock == None:
+            return False, None
+
+
+        
+        
+        # 测试用的protobuf协议方法
+        from proto import ChatMsgProtocol_pb2
+        sock_ChatMsg = ChatMsgProtocol_pb2.ChatMsg()
+        import struct
+
+        
+        
+        
+        for n in range(3):
+            sock_ChatMsg.content = "hello, I'm no.%s from robot %s" % (n, self.sid)
+            data_buf = sock_ChatMsg.SerializeToString()
+            dataLen = sock_ChatMsg.ByteSize() + 12
+            stream = struct.pack(">iii" , 2, dataLen, 3) + data_buf
+            logging.info("sending data : "+ repr(stream))
+            
+            self.sock.send(stream)
+            self.cc.acquire()
+            logging.info("ready for waiting.")
+            self.cc.wait()
+            self.cc.release()
+            logging.info("recv data [%s]" % repr(self.sockdata.get()))
+            
+            
+        logging.info("data send finished.")
+        #logging.info("action login executed.")
+        #rd = self.sockresult.get()
+        #logging.info(repr(rd))
+        self.closeTcp(self.sock)
+        #self.exit()
+        return True, 123
+
+
+PythonRobots = []
+RobotsCount = 200
+
+
+for n in range(1, RobotsCount + 1):
+    PythonRobots.append(threading.Thread(target = rb_worker, args=(n,), name = "robotThread-%s" % n))
+    
+for npr in PythonRobots:
+    npr.start()
+
+for npr in PythonRobots:
+    npr.join()
+
+
+logging.info("done.............")
+logging.info("-" * 60)

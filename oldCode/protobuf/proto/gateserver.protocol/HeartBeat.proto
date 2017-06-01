@@ -1,0 +1,14 @@
+package protocal.gate;
+
+enum ProtoID{
+  GATE_HEART_PING = 1;
+  GATE_HEART_PONG = 2;
+}
+
+//网关服务器的的心跳
+message GateSvrHeartPing{
+}
+
+
+message GateSvrHeartPong{
+}

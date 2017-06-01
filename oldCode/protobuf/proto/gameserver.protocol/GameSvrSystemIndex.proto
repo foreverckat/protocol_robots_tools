@@ -1,0 +1,12 @@
+package protocal.game;
+
+
+enum SystemType{
+  SERVER_ERROR = 1;
+  GAMESVR_HEARTBEAT = 2;
+  ROLE = 3;
+  STAGE = 4;
+  FORMATION = 5;
+  EMPLOYE = 6;
+  WEAPON = 7;
+}

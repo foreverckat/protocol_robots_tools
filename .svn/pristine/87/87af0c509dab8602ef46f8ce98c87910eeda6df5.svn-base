@@ -1,0 +1,4 @@
+enum SystemType {				// 消息分类
+	SYS_TYPE_SYS = 0;			// 系统消息
+	SYS_TYPE_CHAT = 1;			// 聊天系统消息
+}

@@ -1,0 +1,14 @@
+package protocal.game.GameSvrHeartBeatProto;
+
+enum ProtoID{
+  GAME_HEART_PING = 1;
+  GAME_HEART_PONG = 2;
+}
+
+//gameserverµÄÐÄÌø
+message GameSvrHeartPing{
+}
+
+
+message GameSvrHeartPong{
+}

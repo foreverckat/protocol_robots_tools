@@ -1,0 +1,125 @@
+package protocal.game.RoleProto;
+
+enum ProtoID{
+
+  //玩家登陆
+  ROLE_LOGIN_REQ = 1;
+  ROLE_LOGIN_RESPONSE = 2;
+  
+  //创建玩家
+  CREATE_ROLE_REQ = 3;
+  ROLE_INFO_RESPONSE = 4;
+  
+  
+  //随机名字
+  RANDOM_NICK_NAME_REQ = 5;
+  RANDOM_NICK_NAME_RESPONSE = 6;
+  
+  
+  //退出游戏
+  ROLE_LOGOUT_REQ=7;
+  
+  //背包信息
+  ROLE_BAG_REQ = 8;
+  ROLE_BAG_RESPONSE = 9;
+  
+}
+
+//登陆gameserver获取玩家信息
+message RoleLoginRequest{
+  required string token = 1; 
+  required string hash = 2;
+}
+
+
+//gameserver获取玩家的返回
+message RoleLoginResponse{
+  required bool roleExist = 1;//玩家是否存在
+  optional RoleInfoResponse roleInfo = 2;
+}
+
+//玩家信息
+message RoleInfoResponse{
+  required string roleName = 1;//昵称
+  required int32 level = 2;//等级
+  required int64 id = 3;//玩家id
+  required int32 experience = 4;//经验
+  required int32 power = 5;//体力
+  required int32 softCurrency = 6;//金币(游戏币)
+  required int32 hardCurrency = 7;//钻石(充钱购买的)
+  required int32 vipLevel = 8;//vip等级
+  repeated EmployeInfo employeList = 9;//角色
+  required int32 buyPowerTime = 10;//购买体力次数
+}
+
+message EmployeInfo{
+  required int64 uid = 1;//角色唯一id
+  required CardInfo card = 2;//所选卡片
+  required EmployeWeaponInfo weapon = 3;//装备武器
+  required ClothesInfo clothes = 4;//服饰信息
+  required float moveSpeed = 5;//角色移动速度
+}
+
+message ClothesInfo{
+  repeated int32 allList = 1;//所有服饰
+  repeated int32 ownList = 2;//解锁服饰(allList的下标)
+  required int32 use = 3;//使用服饰(allList的下标)
+}
+
+//卡牌信息
+message CardInfo{
+  required int64 uid = 1;//卡片唯一id
+  required int32 id = 2;//静态表卡片id
+  required int32 level = 3;//卡片等级
+  required int32 fight = 4;//战力
+  required int32 exp = 5;//当前经验
+  required int32 hp = 6;//生命值
+  required int32 mp = 7;//能量值
+  required int32 attack = 8;//攻击值
+  required int32 defense = 9;//防御
+  repeated CardSkillInfo skillList = 10;//卡牌技能
+}
+
+message CardSkillInfo{
+  required int32 id = 1;//技能静态表id
+  required int32 level = 2;//技能等级
+}
+
+message EmployeWeaponInfo{
+  required int64 uid = 1;//武器唯一id
+  required int32 id = 2;//静态表武器id
+  required int32 level = 3;//武器等级
+  required int32 inensifyId = 4;//武器强化id
+}
+
+//创建玩家
+message CreateRoleRequest{
+  required string roleName = 1;
+}
+
+//获取随机名字请求
+message RandomNickNameRequest{
+}
+
+//获取随机名字服务器返回
+message RandomNickNameResponse{
+  required string roleName = 1;
+}
+
+message BagInfoRequest{
+}
+
+message BagInfoResponse{
+  repeated BagItem itemList = 1;//玩家道具
+  repeated CardInfo cardList = 2;//玩家卡牌
+}
+
+message BagItem{
+  required int32 id = 1;//静态表id
+  required int32 count = 2;//数量
+}
+
+
+//退出游戏
+message RoleLogoutRequest{
+}

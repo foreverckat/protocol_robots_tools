@@ -1,0 +1,50 @@
+package protocal.game.WeaponProto;
+
+enum ProtoID{
+
+  //武器升级
+  WEAPON_UPGRADE_REQ = 1;
+  WEAPON_UPGRADE_RESPINSE = 2;
+  
+  //武器进阶
+  WEAPON_ADVANCE_REQ = 3;
+  WEAPON_ADVANCE_RESPINSE = 4;
+  
+  
+  //更换武器
+  WEAPON_REPLACE_REQ = 5;
+  WEAPON_REPLACE_RESPINSE = 6;
+  
+  
+}
+
+//升级武器
+message WeaponUpgradeRequest{
+  required int64 weaponUid = 1;//武器唯一id
+}
+
+
+//升级武器的返回
+message WeaponUpgradeResponse{
+}
+
+//进阶武器
+message WeaponAdvanceRequest{
+  required int64 weaponUid = 1;//武器唯一id
+}
+
+
+//进阶武器的返回
+message WeaponAdvanceResponse{
+}
+
+//更换武器
+message WeaponReplaceRequest{
+  required int64 weaponUid = 1;//武器唯一id(将要穿上的武器id)
+  required int64 employeUid = 2;//角色uid
+}
+
+
+//更换武器的返回
+message WeaponReplaceResponse{
+}

@@ -1,0 +1,8 @@
+package protocal;
+
+
+message ChatMsg{
+  optional int32 pbid = 1 [default = 3];
+  required string content = 2;
+}
+

@@ -1,0 +1,23 @@
+package protocal;
+
+option optimize_for = SPEED;
+
+enum LogLevel{
+  DEBUG = 0;
+  INFO = 1;
+  WARN = 2;
+  ERROR = 3;
+}
+
+
+message ClientLog{
+  optional int32 pbid = 1 [default = 1];
+  required LogLevel level = 2;
+  required int32 id = 3;
+  required int64 timestamp = 4;  
+  required string content = 5;
+}
+
+message ClientLogs{
+  repeated ClientLog clientlog = 1;
+}

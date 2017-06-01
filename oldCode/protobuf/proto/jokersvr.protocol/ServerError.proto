@@ -1,0 +1,12 @@
+package commonProtocal.JokerServerProto;
+
+enum ProtoID{
+  SERVER_EXCEPTION = 1;
+}
+
+message ServerException{
+  required uint32 errorCode = 1; 
+  required string info = 2;
+}
+
+

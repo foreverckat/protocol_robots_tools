@@ -1,0 +1,10 @@
+package commonProtocal.JokerServerProto;
+
+enum ServerType {
+   NONE = 0;			// 空
+   LAUNCH_SVR = 1;		// 登陆服务器
+   LOG_SVR = 2;			// 日志服务器
+   GAME_SVR = 3;		// 游戏服务器
+   GATE_SVR = 4;		// 网关服务器
+}
+

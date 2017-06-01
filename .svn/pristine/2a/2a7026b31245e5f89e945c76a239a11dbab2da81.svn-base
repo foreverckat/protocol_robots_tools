@@ -1,0 +1,56 @@
+#coding=utf8
+
+'''
+@author: chengjie
+'''
+
+import logging
+import threading
+import select
+import socket
+from LGN import *
+
+def initConn(func):
+    """
+    decorator of socket connection
+    
+    """
+    def __decorator(*argus):
+        if len(argus) != 2 and type(argus[0]) != str and type(argus[1]) != int:
+            logging.error(Action_Msg_01)
+            return False
+        sock = func(*argus)
+        setattr(sock, "sendData", )
+        return
+    return __decorator
+
+
+ 
+@initConn
+def ConnectHandler(*argus):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    host_IP, host_PORT = argus
+    try:
+        sock.connect((host_IP, host_PORT))
+        
+    except Exception, e:
+        logging.error("connect to %s failed, %s" % (":".join([host_IP, str(host_PORT)]), e))
+        sock.close()
+        return None
+    return sock
+
+
+
+
+
+
+
+
+def send_data(sock, data):
+    
+
+
+
+
+sk = ConnectHandler("127.0.0.1", 8771)

@@ -1,0 +1,10 @@
+eclipse.preferences.version=1
+encoding//proto/gen.py=UTF8
+encoding//robot/LGN.py=utf8
+encoding//robot/robot_Actions.py=utf8
+encoding//robot/robot_Data.py=utf8
+encoding//robot/robot_Socket.py=utf8
+encoding/client_api_for_rf.py=utf8
+encoding/client_test.py=utf-8
+encoding/robot_config.py=UTF8
+encoding/server_test.py=utf-8

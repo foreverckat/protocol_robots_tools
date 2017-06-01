@@ -1,0 +1,38 @@
+package protocal.game.FormationProto;
+
+enum ProtoID{
+
+  //获取当前阵型
+  FORMATION_INFO_REQ = 1;
+  FORMATION_INFO_RESPONSE = 2;
+ 
+ 
+  //保存阵型
+  FORMATION_SAVE_REQ = 3;
+  FORMATION_SAVE_RESPONSE = 4;
+  
+ 
+  
+}
+
+//获取阵型信息
+message FormationInfoRequest{
+  required int32 formationNum = 1; //阵型编号(用于扩展,可能有多个阵型)
+}
+
+message FormationInfoResponse{
+  repeated BattleEmploye battleEmployeList = 1;//出战角色集合
+}
+
+message BattleEmploye{
+  required int64 employeUid = 1;//角色uid
+  required int32 index = 2;//位置(0,1,2)
+}
+
+//上阵
+message FormationSaveRequest{
+  repeated BattleEmploye battleEmployeList = 1;//出战角色集合
+}
+
+message FormationSaveResponse{
+}

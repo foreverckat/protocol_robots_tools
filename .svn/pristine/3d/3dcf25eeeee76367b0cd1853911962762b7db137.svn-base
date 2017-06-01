@@ -1,0 +1,157 @@
+#-*- coding=utf-8 -*-
+'''
+@author: chengjie
+'''
+
+from robot_config import robot_cfg
+from robot import robot_basic
+from robot import robot_Actions
+from robot import robot_Socket
+from robot import robot_Data
+import logging
+import threading
+import Queue
+
+import socket
+import time
+from _socket import SOCK_STREAM
+from proto.ChatMsgProtocol_pb2 import ChatMsg
+lock = threading.Lock()
+
+class rb_worker(robot_Actions.actionManager):#, robot_Socket.socketManager):
+    
+    """
+    robot class.
+    """
+    
+    def __init__(self, sid):
+        """
+        initialize some arguments.
+        """
+        
+        self.st = time.time()
+        self.sid = sid
+        
+        robot_Actions.actionManager.__init__(self)
+        #robot_Socket.socketManager.__init__(self)
+        # 处理机器人线程的任务数据
+        #self.cond = threading.Condition()
+        self.robot_config = robot_cfg
+        jobs = Queue.Queue()
+        for na in self.robot_config["robot"]["action"]:jobs.put(na)
+        # 启动任务执行函数
+        self.startRobot(jobs)
+    
+    def startRobot(self, jobs):
+        """
+            从任务队列中依次获取待执行任务，并调用对应方法进行执行
+        """
+        while not jobs.empty():
+            try:
+                action, args = jobs.get()
+                ok, result = self.doAction(action, *args)
+                #logging.info("job -- %s is done." % action)
+                if not ok:
+                    pass
+            finally:
+                jobs.task_done()
+        #logging.info("all tasks done.")
+        
+    def doAction(self, action, *argvs):
+        """
+        select specified method to execute the action.
+        """
+        return getattr(self, action)(*(argvs))
+    
+    def readdata(self, sock, mySocket):
+        
+        rd = None
+        
+        
+        while 1:
+            lock.acquire()
+            if not sock in mySocket.sockdata:
+                lock.release()
+            elif mySocket.sockdata[sock].empty():
+                lock.release()
+            else:
+                try:
+                    rd = mySocket.sockdata[self.sock].get()
+                    if rd != None and len(rd)>0:
+                        lock.release()
+                        break
+                except:
+                    lock.release()
+            
+        return rd
+        
+        
+    
+    def action_login(self, sid):
+        # 测试方法
+        
+        self.sock  = mySocket.connectTcp(self.robot_config["server"]["login"])
+        #logging.info("self.sock is %s" % self.sock)
+        self.sock.settimeout(0.1)
+        
+        if self.sock == None:
+            return False, None
+        
+        # 测试用的protobuf协议方法
+        from proto import ChatMsgProtocol_pb2
+        sock_ChatMsg = ChatMsgProtocol_pb2.ChatMsg()
+        import struct
+
+        
+        
+        
+        for n in range(2):
+            sock_ChatMsg.content = "hello, I'm no.%s from robot %s" % (n, self.sid)
+            data_buf = sock_ChatMsg.SerializeToString()
+            dataLen = sock_ChatMsg.ByteSize() + 12
+            stream = struct.pack(">iii" , 2, dataLen, 3) + data_buf
+            #logging.info("sending data : "+ repr(stream))
+            self.sock.send(stream)
+            rd = self.readdata(self.sock, mySocket)
+            #logging.info("recv data [%s]" % repr(rd))
+            
+            tag, length, pbid = struct.unpack(">iii", rd[:12])
+            sockData = rd[12:]
+            
+            logging.info("recv data [%s]" % repr(sockData))
+        #logging.info("data send finished.")
+        #logging.info("action login executed.")
+        #rd = self.sockresult.get()
+        #logging.info(repr(rd))
+        mySocket.closeTcp(self.sock)
+        #self.exit()
+        return True, 123
+
+mySocket = robot_Socket.socketManager()
+mySocket.start()
+st = time.time()
+"""from multiprocessing.dummy import Pool as ThreadPool
+
+pool = ThreadPool(4)
+results = pool.map(rb_worker, range(10))
+pool.close()
+pool.join()"""
+
+PythonRobots = []
+RobotsCount = 150
+
+
+for n in range(1, RobotsCount + 1):
+    PythonRobots.append(threading.Thread(target = rb_worker, args=(n,)))
+    
+for npr in PythonRobots:
+    npr.start()
+
+for npr in PythonRobots:
+    npr.join()
+
+
+mySocket.closeManager()
+logging.info("done.............")
+logging.info("-" * 60)
+logging.error(time.time() - st)

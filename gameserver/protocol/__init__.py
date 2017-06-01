@@ -1,0 +1,1 @@
+__all__ = ['BagPro_pb2','EmployeSys_pb2','equipPro_pb2','Formation_pb2','GameSvrHeartBeat_pb2','GameSvrSystemIndex_pb2','IntimacyPro_pb2','Lottery_pb2','MailPro_pb2','notice_pb2','Role_pb2','RunePro_pb2','ShopPro_pb2','SignPro_pb2','Stage_pb2']
